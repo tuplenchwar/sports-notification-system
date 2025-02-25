@@ -1,4 +1,4 @@
-package dto;
+package com.sportsnotification.dto;
 
 public class AckPayload {
     private final String topic;

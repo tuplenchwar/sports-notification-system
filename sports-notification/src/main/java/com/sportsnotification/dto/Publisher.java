@@ -1,15 +1,15 @@
-package dto;
+package com.sportsnotification.dto;
 
-public class Subscriber {
+public class Publisher {
     private String id;
     private String topic;
     private String message;
     private String connectionUrl;
 
-    public Subscriber() {
+    public Publisher() {
     }
 
-    public Subscriber(String id, String topic, String message, String connectionUrl) {
+    public Publisher(String id, String topic, String message, String connectionUrl) {
         this.id = id;
         this.topic = topic;
         this.message = message;

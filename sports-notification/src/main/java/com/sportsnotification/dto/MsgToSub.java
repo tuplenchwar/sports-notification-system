@@ -1,4 +1,4 @@
-package dto;
+package com.sportsnotification.dto;
 
 import java.util.List;
 

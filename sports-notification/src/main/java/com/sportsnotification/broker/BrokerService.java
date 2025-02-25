@@ -1,7 +1,8 @@
-package broker;
+package com.sportsnotification.broker;
 
-import dto.*;
+import com.sportsnotification.dto.*;
 import org.springframework.stereotype.Service;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.*;
 
@@ -11,10 +12,10 @@ public class BrokerApplication {
     private final List<Subscriber> subscribers = new ArrayList<>();
     private final List<Publisher> publishers = new ArrayList<>();
     private final List<String> topics = new ArrayList<>();
-    private final ConcurrentHashMap<String, List<Subscriber>> topicsSubscriber = new HashMap<>();
-    private final ConcurrentHashMap<Integer, String> messageIdTomessage = new HashMap<>();
-    private final ConcurrentHashMap<Integer, List<MsgToSub>> messageIdToSub = new HashMap<>();
-    private final ConcurrentHashMap<String, Map<Integer, List<String>>> acknowledgments = new HashMap<>();
+    private final ConcurrentHashMap<String, List<Subscriber>> topicsSubscriber = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, String> messageIdTomessage = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, List<MsgToSub>> messageIdToSub = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Map<Integer, List<String>>> acknowledgments = new ConcurrentHashMap<>();
 
     public List<String> getAllTopics() {
         return topics;

@@ -1,4 +1,4 @@
-package dto;
+package com.sportsnotification.broker.dto;
 
 public class Broker {
     private int id;
