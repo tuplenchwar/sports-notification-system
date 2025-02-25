@@ -1,10 +1,10 @@
-package com.sportsnotification.broker.dto;
+package com.sportsnotification.dto;
 
 public class Broker {
     private int id;
     private String connectionUrl;
     private int port;
-    private boolean isLeaderl;
+    private boolean isLeader;
 
     public Broker() {
     }
@@ -13,7 +13,7 @@ public class Broker {
         this.id = id;
         this.connectionUrl = connectionUrl;
         this.port = port;
-        this.isLeaderl = isLeader;
+        this.isLeader = isLeader;
     }
 
     public int getId() {
@@ -40,11 +40,11 @@ public class Broker {
         this.port = port;
     }
 
-    public boolean isLeaderl() {
-        return isLeaderl;
+    public boolean isLeader() {
+        return isLeader;
     }
 
-    public void setLeaderl(boolean leaderl) {
-        isLeaderl = leaderl;
+    public void setLeader(boolean leader) {
+        isLeader = leader;
     }
 }

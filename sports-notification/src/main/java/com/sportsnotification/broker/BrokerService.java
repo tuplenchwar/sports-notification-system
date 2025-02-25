@@ -1,13 +1,15 @@
 package com.sportsnotification.broker;
 
 import com.sportsnotification.dto.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.*;
 
 @Service
-public class BrokerApplication {
+public class BrokerService {
     private final List<Broker> brokers = new ArrayList<>();
     private final List<Subscriber> subscribers = new ArrayList<>();
     private final List<Publisher> publishers = new ArrayList<>();
@@ -16,6 +18,10 @@ public class BrokerApplication {
     private final ConcurrentHashMap<Integer, String> messageIdTomessage = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, List<MsgToSub>> messageIdToSub = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Map<Integer, List<String>>> acknowledgments = new ConcurrentHashMap<>();
+
+    @Autowired
+    @Lazy
+    private BrokerRegistration brokerRegistration;
 
     public List<String> getAllTopics() {
         return topics;
@@ -104,6 +110,16 @@ public class BrokerApplication {
             acknowledgments.get(topic).remove(messageId);
         }
         return "✅ Acknowledgment received for message [" + topic + "] from subscriber: " + subscriber;
+    }
+
+    public void updateLeader(Broker newLeader) {
+        Broker currentBroker = brokerRegistration.getCurrentBroker();
+        if (newLeader.getId()== currentBroker.getId()) {
+            currentBroker.setLeader(true);
+            System.out.println("I am the leader");
+        } else {
+            System.out.println("Leader is: " + newLeader.getId());
+        }
     }
 
     private int getSubscriberCount(String topic) {
