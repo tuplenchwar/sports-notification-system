@@ -3,9 +3,11 @@ package com.sportsnotification.broker;
 import com.sportsnotification.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Profile("broker")
 @RestController
@@ -31,13 +33,13 @@ public class BrokerController {
     }
 
     @PostMapping("/publish")
-    public void publishMessage(@RequestBody Packet message) {
-        brokerService.publishMessage(message);
+    public ResponseEntity<String> publishMessage(@RequestBody Packet message) {
+        return brokerService.publishMessage(message);
     }
 
-    @PutMapping("/replicatemessage")
-    public void updateMessages(@RequestBody Packet message) {
-        brokerService.updateMessages(message);
+    @PutMapping("/replicatemessages")
+    public void updateMessages(@RequestBody ConcurrentLinkedQueue<Packet> messageQueue) {
+        brokerService.updateMessages(messageQueue);
     }
 
     @PutMapping("/subscribe")
@@ -50,13 +52,19 @@ public class BrokerController {
         brokerService.unsubscribeToTopic(subscriber);
     }
 
-    @PostMapping("/ack")
-    public String acknowledgeMessage(@RequestBody AckPayload ackPayload) {
-        return brokerService.acknowledgeMessage(ackPayload);
-    }
-
     @PutMapping("/update-leader")
     public void updateLeader(@RequestBody Broker newleader) {
         brokerService.updateLeader(newleader);
     }
+
+    @PutMapping("/update-brokers")
+    public void updateBrokerList(@RequestBody List<Broker> brokers) {
+        brokerService.updateBrokers(brokers);
+    }
+
+    @GetMapping("/brokers-list")
+    public List<Broker> getBrokersList() {
+        return brokerService.getBrokersList();
+    }
+    
 }

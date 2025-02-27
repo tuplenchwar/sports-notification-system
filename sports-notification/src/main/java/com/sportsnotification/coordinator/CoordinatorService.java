@@ -34,6 +34,7 @@ public class CoordinatorService {
             broker.setLeader(false);
         }
         brokers.add(broker);
+        sendBrokersListToAllBrokers(brokers);
         return leaderBroker;
     }
 
@@ -66,9 +67,11 @@ public class CoordinatorService {
             for (Integer brokerId : brokersToRemove) {
                 Broker broker = removeBrokerById(brokerId);
                 heartbeatMap.remove(brokerId);
-
+                removeBrokerById(brokerId);
                 if (broker != null && broker.isLeader()) {
                     electNewLeader();
+                } else {
+                    sendBrokersListToAllBrokers(brokers);
                 }
             }
         }, 0, 3, TimeUnit.SECONDS); // Check every 3 seconds
@@ -99,11 +102,24 @@ public class CoordinatorService {
         for (Broker broker : brokers) {
                 try {
                     String brokerUrl = broker.getConnectionUrl() + "/broker/update-leader";
+                    restTemplate.put(brokerUrl, newLeader, Broker.class);
                     System.out.println("New leader broker: " + broker.getId());
-                    restTemplate.postForObject(brokerUrl, newLeader, Broker.class);
+                    sendBrokersListToAllBrokers(brokers);
                 } catch (Exception e) {
                     System.err.println("Failed to notify broker: " + broker.getId());
                 }
+        }
+    }
+
+    private void sendBrokersListToAllBrokers(List<Broker> brokers) {
+        for (Broker broker : brokers) {
+            try {
+                String brokerUrl = broker.getConnectionUrl() + "/broker/update-brokers";
+                restTemplate.put(brokerUrl, brokers);
+                System.out.println("Brokers list sent to broker: " + broker.getId());
+            } catch (Exception e) {
+                System.err.println("Failed to send brokers list to broker: " + broker.getId());
+            }
         }
     }
 }

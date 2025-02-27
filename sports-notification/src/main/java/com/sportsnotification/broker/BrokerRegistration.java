@@ -1,6 +1,6 @@
 package com.sportsnotification.broker;
 
-import com.sportsnotification.dto.Broker;
+import com.sportsnotification.dto.*;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +27,11 @@ public class BrokerRegistration {
     @Value("${server.port}")
     private Integer brokerPort;
 
+    @Autowired
+    private BrokerService brokerService;
+
+    private Thread messageProcessingThread;
+
     @PostConstruct
     public void registerBroker() {
         UUID uuid = UUID.randomUUID();
@@ -37,9 +42,21 @@ public class BrokerRegistration {
         currentBroker.setConnectionUrl("http://localhost:" + brokerPort);
 
         // Send the registration request
-        Broker leader = restTemplate.postForObject(coordinatorUrl + "/coordinator/register", currentBroker, Broker.class);
-        System.out.println("Leader broker: " + leader);
+        Broker regResponse = restTemplate.postForObject(coordinatorUrl + "/coordinator/register", currentBroker, Broker.class);
+        if(regResponse.isLeader()){
+            startMessageProcessingThread();
+        }
     }
 
+    private void startMessageProcessingThread() {
+        if (messageProcessingThread != null && messageProcessingThread.isAlive()) {
+            return; // Prevent multiple threads
+        }
+
+        MessageProcessor messageProcessor = new MessageProcessor(brokerService, restTemplate);
+        messageProcessingThread = new Thread(messageProcessor);
+        messageProcessingThread.setDaemon(true);
+        messageProcessingThread.start();
+    }
 }
 
