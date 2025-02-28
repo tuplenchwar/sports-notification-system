@@ -3,19 +3,26 @@ package com.sportsnotification.coordinator;
 import com.sportsnotification.dto.*;
 import lombok.Getter;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.concurrent.*;
 import javax.annotation.PostConstruct;
 import java.util.concurrent.TimeUnit;
 import java.util.*;
-import java.util.concurrent.*;
+
 
 @Profile("coordinator")
 @Service
+@EnableAsync
 public class CoordinatorService {
     @Getter
-    private final List<Broker> brokers = new CopyOnWriteArrayList<>();
+    private final List<Broker> brokers = new ArrayList<>();
     private Broker leaderBroker = new Broker();
     private final ConcurrentHashMap<Integer, Long> heartbeatMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -26,7 +33,7 @@ public class CoordinatorService {
         startHeartbeatMonitor();
     }
 
-    public Broker register(Broker broker) {
+    public List<Broker> register(Broker broker) {
         if (brokers.isEmpty()) {
             broker.setLeader(true);
             leaderBroker = broker;
@@ -34,8 +41,8 @@ public class CoordinatorService {
             broker.setLeader(false);
         }
         brokers.add(broker);
-        sendBrokersListToAllBrokers(brokers);
-        return leaderBroker;
+        sendBrokersListToAllBrokersAsync(broker);
+        return brokers;
     }
 
     public void heartbeat(Heartbeat heartbeat) {
@@ -67,11 +74,11 @@ public class CoordinatorService {
             for (Integer brokerId : brokersToRemove) {
                 Broker broker = removeBrokerById(brokerId);
                 heartbeatMap.remove(brokerId);
-                removeBrokerById(brokerId);
+                // removeBrokerById(brokerId);
                 if (broker != null && broker.isLeader()) {
                     electNewLeader();
                 } else {
-                    sendBrokersListToAllBrokers(brokers);
+                    sendBrokersListToAllBrokersAsync(broker);
                 }
             }
         }, 0, 3, TimeUnit.SECONDS); // Check every 3 seconds
@@ -104,21 +111,25 @@ public class CoordinatorService {
                     String brokerUrl = broker.getConnectionUrl() + "/broker/update-leader";
                     restTemplate.put(brokerUrl, newLeader, Broker.class);
                     System.out.println("New leader broker: " + broker.getId());
-                    sendBrokersListToAllBrokers(brokers);
+                    sendBrokersListToAllBrokersAsync(null);
                 } catch (Exception e) {
                     System.err.println("Failed to notify broker: " + broker.getId());
                 }
         }
     }
 
-    private void sendBrokersListToAllBrokers(List<Broker> brokers) {
+    @Async
+    protected void sendBrokersListToAllBrokersAsync(Broker skipBroker) {
         for (Broker broker : brokers) {
+            if (skipBroker != null && broker.getId() == skipBroker.getId()) {
+                continue; // Skip notifying the broker immediately
+            }
             try {
-                String brokerUrl = broker.getConnectionUrl() + "/broker/update-brokers";
-                restTemplate.put(brokerUrl, brokers);
-                System.out.println("Brokers list sent to broker: " + broker.getId());
-            } catch (Exception e) {
-                System.err.println("Failed to send brokers list to broker: " + broker.getId());
+                    String brokerUrl = broker.getConnectionUrl() + "/broker/update-brokers";
+                    restTemplate.put(brokerUrl, brokers, List.class);
+                    System.out.println("Updated brokers list for broker: " + broker.getId());
+                } catch (Exception e) {
+                    System.err.println("Failed to update brokers list for broker: " + broker.getId());
             }
         }
     }

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 @Profile("broker")
 @RestController
@@ -18,7 +19,7 @@ public class BrokerController {
     private BrokerService brokerService;
 
     @GetMapping("/gettopics")
-    public List<String> getAllTopics() {
+    public ConcurrentSkipListSet<String> getAllTopics() {
         return brokerService.getAllTopics();
     }
 
@@ -37,9 +38,14 @@ public class BrokerController {
         return brokerService.publishMessage(message);
     }
 
-    @PutMapping("/replicatemessages")
-    public void updateMessages(@RequestBody ConcurrentLinkedQueue<Packet> messageQueue) {
-        brokerService.updateMessages(messageQueue);
+    @PostMapping("/replicatemessages")
+    public ResponseEntity<String> updateMessages(@RequestBody ConcurrentLinkedQueue<Packet> messageQueue) {
+        return brokerService.updateMessages(messageQueue);
+    }
+
+    @PostMapping("/replicatetopics")
+    public ResponseEntity<String> updateTopics(@RequestBody ConcurrentSkipListSet<String> topics) {
+        return brokerService.updateTopics(topics);
     }
 
     @PutMapping("/subscribe")
@@ -58,7 +64,7 @@ public class BrokerController {
     }
 
     @PutMapping("/update-brokers")
-    public void updateBrokerList(@RequestBody List<Broker> brokers) {
+    public void  updateBrokerList(@RequestBody List<Broker> brokers) {
         brokerService.updateBrokers(brokers);
     }
 

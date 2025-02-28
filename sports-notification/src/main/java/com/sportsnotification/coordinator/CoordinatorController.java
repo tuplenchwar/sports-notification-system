@@ -1,6 +1,7 @@
 package com.sportsnotification.coordinator;
 
 import com.sportsnotification.dto.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.context.annotation.Profile;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ public class CoordinatorController {
     private CoordinatorService coordinatorService;
 
     @PostMapping("/register")
-    public Broker register(@RequestBody Broker broker) {
+    public List<Broker>  register(@RequestBody Broker broker) {
         return coordinatorService.register(broker);
     }
 

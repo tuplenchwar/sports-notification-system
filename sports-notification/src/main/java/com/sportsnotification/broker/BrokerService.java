@@ -13,13 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 public class BrokerService {
-    private final List<Broker> brokers = new ArrayList<>();
-    private final List<Subscriber> subscribers = new ArrayList<>();
-    private final List<Publisher> publishers = new ArrayList<>();
-    private final List<String> topics = new ArrayList<>(); // add API to add topics from leader to brokers
+    private final CopyOnWriteArrayList<Broker> brokers = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<Subscriber> subscribers = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<Publisher> publishers = new CopyOnWriteArrayList<>();
+    private final ConcurrentSkipListSet<String> topics = new ConcurrentSkipListSet<>();
     @Getter
     private final ConcurrentHashMap<String, List<Subscriber>> topicsSubscriber = new ConcurrentHashMap<>(); // Broadcast thread
     @Getter
@@ -34,7 +36,7 @@ public class BrokerService {
 
     private Thread messageProcessingThread;
 
-    public List<String> getAllTopics() {
+    public ConcurrentSkipListSet<String> getAllTopics() {
         return topics;
     }
 
@@ -57,6 +59,10 @@ public class BrokerService {
             throw new IllegalArgumentException("Topic and Message cannot be null");
         }
 
+        if(!topics.contains(message.getTopic())) {
+            topics.add(message.getTopic());
+            replicateTopicsToAllBrokers(topics);
+        }
         messages.add(message);
         replicateMessageToAllBrokers(messages);
 
@@ -64,11 +70,11 @@ public class BrokerService {
         return ResponseEntity.ok("Message successfully published.");
     }
 
-    public void updateMessages(ConcurrentLinkedQueue<Packet> messageQueue) {
-        if(!brokerRegistration.getCurrentBroker().isLeader())
-        {
+    public ResponseEntity<String> updateMessages(ConcurrentLinkedQueue<Packet> messageQueue) {
+            this.messages.clear();
             this.messages.addAll(messageQueue);
-        }
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Message successfully published.");
     }
 
     public void subscribeToTopic(Subscriber subscriber) {
@@ -113,6 +119,11 @@ public class BrokerService {
         return brokers;
     }
 
+    public void setBrokerList(List<Broker> brokers) {
+        this.brokers.clear();
+        this.brokers.addAll(brokers);
+    }
+
     public ConcurrentLinkedQueue<Packet> getMessagesQueue(){
         return messages;
     }
@@ -121,14 +132,36 @@ public class BrokerService {
         return topicsSubscriber;
     }
 
-    public void replicateMessageToAllBrokers(ConcurrentLinkedQueue<Packet> messages) {
+    public ResponseEntity<String> replicateMessageToAllBrokers(ConcurrentLinkedQueue<Packet> messages) {
         for (Broker broker : brokers) {
             if (!broker.isLeader()) {
                 String brokenUrl = broker.getConnectionUrl();
                 // send messages to broker
-                restTemplate.postForObject(brokenUrl + "/broker/replicatemessages", messages, ConcurrentLinkedQueue.class);
+                restTemplate.postForObject(brokenUrl + "/broker/replicatemessages", messages, String.class);
             }
         }
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Message replicate successfully.");
+    }
+
+    public ResponseEntity<String> replicateTopicsToAllBrokers(ConcurrentSkipListSet<String> topics) {
+        for (Broker broker : brokers) {
+            if (!broker.isLeader()) {
+                String brokenUrl = broker.getConnectionUrl();
+                // send topics to broker
+                restTemplate.postForObject(brokenUrl + "/broker/replicatetopics", topics, String.class);
+
+            }
+        }
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Topic replicate successfully.");
+    }
+
+    public ResponseEntity<String> updateTopics(ConcurrentSkipListSet<String> topics) {
+            this.topics.clear();
+            this.topics.addAll(topics);
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Topic replicate successfully.");
     }
 
     private void startMessageProcessingThread() {
