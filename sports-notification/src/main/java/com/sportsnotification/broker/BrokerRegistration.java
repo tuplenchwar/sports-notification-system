@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -49,7 +50,7 @@ public class BrokerRegistration {
         ResponseEntity<Broker[]> response = restTemplate.postForEntity(coordinatorUrl + "/coordinator/register", currentBroker, Broker[].class);
         Broker[] brokers = response.getBody();
         if (brokers != null) {
-            List<Broker> brokerList = new ArrayList<>();
+            CopyOnWriteArrayList<Broker> brokerList = new CopyOnWriteArrayList<>();
             for (Broker broker : brokers) {
                 if (broker.getId() == currentBroker.getId() && broker.isLeader()) {
                     startMessageProcessingThread();

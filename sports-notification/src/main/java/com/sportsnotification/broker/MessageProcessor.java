@@ -28,16 +28,16 @@ public class MessageProcessor implements Runnable {
 
                 if (!messages.isEmpty()) {
                     Packet message = messages.peek();
-                    if (message != null) {
-                        List<Subscriber> subscribers = topicsSubscriber.get(message.getTopic());
-                        if (subscribers != null) {
-                            for (Subscriber subscriber : subscribers) {
-                                restTemplate.postForObject(subscriber.getConnectionUrl() + "/receive", message, String.class);
-                            }
-                            messages.poll();
-                            brokerService.replicateMessageToAllBrokers(messages);
+                    System.out.println("Processing message: " + message.getMessage());
+                    List<Subscriber> subscribers = topicsSubscriber.get(message.getTopic());
+                    if (subscribers != null) {
+                        for (Subscriber subscriber : subscribers) {
+                            System.out.println("Sending message to subscriber: " + subscriber.getConnectionUrl());
+                            restTemplate.postForObject(subscriber.getConnectionUrl() + "/subscriber/receive", message, String.class);
                         }
                     }
+                    messages.poll();
+                    brokerService.replicateMessageToAllBrokers(messages);
                 }
                 Thread.sleep(1000); // Adjust delay as needed
             } catch (Exception e) {

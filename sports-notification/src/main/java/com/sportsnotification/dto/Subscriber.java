@@ -1,7 +1,9 @@
 package com.sportsnotification.dto;
 
+import java.util.Objects;
+
 public class Subscriber {
-    private String id;
+    private Integer id;
     private String topic;
     private String message;
     private String connectionUrl;
@@ -9,18 +11,18 @@ public class Subscriber {
     public Subscriber() {
     }
 
-    public Subscriber(String id, String topic, String message, String connectionUrl) {
+    public Subscriber(Integer id, String topic, String message, String connectionUrl) {
         this.id = id;
         this.topic = topic;
         this.message = message;
         this.connectionUrl = connectionUrl;
     }
 
-    public String getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -47,4 +49,5 @@ public class Subscriber {
     public void setConnectionUrl(String connectionUrl) {
         this.connectionUrl = connectionUrl;
     }
+    
 }

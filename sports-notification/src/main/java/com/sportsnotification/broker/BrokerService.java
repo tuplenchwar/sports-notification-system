@@ -4,6 +4,7 @@ import com.sportsnotification.dto.*;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -47,11 +48,15 @@ public class BrokerService {
         publishers.add(publisher);
     }
 
-    public void registerSubscriber(Subscriber subscriber) {
+    public ResponseEntity<String>  registerSubscriber(Subscriber subscriber) {
         if (subscriber.getConnectionUrl() == null) {
             throw new IllegalArgumentException("Connection URL cannot be null");
         }
         subscribers.add(subscriber);
+        System.out.println("Registered Subscriber Id : " + subscriber.getId());
+        replicateSubscribersToAllBrokers(subscribers);
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Subscriber registered successfully.");
     }
 
     public ResponseEntity<String>  publishMessage(Packet message) {
@@ -64,6 +69,7 @@ public class BrokerService {
             replicateTopicsToAllBrokers(topics);
         }
         messages.add(message);
+        System.out.println("I am the leader - I recieved a message and I will process it - " + message.getMessage());
         replicateMessageToAllBrokers(messages);
 
         // Return HTTP 200 OK status with a success message
@@ -77,26 +83,46 @@ public class BrokerService {
         return ResponseEntity.ok("Message successfully published.");
     }
 
-    public void subscribeToTopic(Subscriber subscriber) {
-        if (subscriber.getTopic() == null) {
-            throw new IllegalArgumentException("Topic cannot be null");
+    public ResponseEntity<String> subscribeToTopic(Subscriber subscriber) {
+        if(isSubscriberValid(subscriber.getId())) {
+            if (subscriber.getTopic() == null) {
+                throw new IllegalArgumentException("Topic cannot be null");
+            }
+            if (topicsSubscriber.containsKey(subscriber.getTopic())) {
+                System.out.println("Subscriber Id : " + subscriber.getId());
+                System.out.println("Subscribed to topic: " + subscriber.getTopic());
+                topicsSubscriber.get(subscriber.getTopic()).add(subscriber);
+            } else {
+                List<Subscriber> subscribers = new ArrayList<>();
+                subscribers.add(subscriber);
+                System.out.println("Subscriber Id : " + subscriber.getId());
+                System.out.println("Subscribed to topic: " + subscriber.getTopic());
+                topicsSubscriber.put(subscriber.getTopic(), subscribers);
+            }
         }
-        if (topicsSubscriber.containsKey(subscriber.getTopic())) {
-            topicsSubscriber.get(subscriber.getTopic()).add(subscriber);
-        } else {
-            List<Subscriber> subscribers = new ArrayList<>();
-            subscribers.add(subscriber);
-            topicsSubscriber.put(subscriber.getTopic(), subscribers);
+        else {
+            System.out.println("Invalid Subscriber Id : " + subscriber.getId());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 if subscriber is not valid
         }
+        replicateTopicsToSubscribersToAllBrokers(topicsSubscriber);
+        return ResponseEntity.ok("Subscriber subscribe to topic successfully.");
     }
 
-    public void unsubscribeToTopic(Subscriber subscriber) {
-        if (subscriber.getTopic() == null) {
-            throw new IllegalArgumentException("Topic cannot be null");
+    public ResponseEntity<String> unsubscribeToTopic(Subscriber subscriber) {
+        if(isSubscriberValid(subscriber.getId())) {
+            if (subscriber.getTopic() == null) {
+                throw new IllegalArgumentException("Topic cannot be null");
+            }
+            if (topicsSubscriber.containsKey(subscriber.getTopic())) {
+                topicsSubscriber.get(subscriber.getTopic()).remove(subscriber);
+            }
         }
-        if (topicsSubscriber.containsKey(subscriber.getTopic())) {
-            topicsSubscriber.get(subscriber.getTopic()).remove(subscriber.getConnectionUrl());
+        else {
+            System.out.println("Invalid Subscriber Id : " + subscriber.getId());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 if subscriber is not valid
         }
+        replicateTopicsToSubscribersToAllBrokers(topicsSubscriber);
+        return ResponseEntity.ok("Subscriber unsubscribe to topic successfully.");
     }
 
     public void updateLeader(Broker newLeader) {
@@ -157,11 +183,58 @@ public class BrokerService {
         return ResponseEntity.ok("Topic replicate successfully.");
     }
 
+    public ResponseEntity<String> replicateSubscribersToAllBrokers(CopyOnWriteArrayList<Subscriber> subscribers) {
+        for (Broker broker : brokers) {
+            if (!broker.isLeader()) {
+                String brokenUrl = broker.getConnectionUrl();
+                // send subscribers to broker
+                restTemplate.postForObject(brokenUrl + "/broker/replicatesubscribers", subscribers, String.class);
+            }
+        }
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Subscriber replicate successfully.");
+    }
+
+    public ResponseEntity<String> replicateTopicsToSubscribersToAllBrokers(ConcurrentHashMap<String, List<Subscriber>> topicsToSubscribers) {
+        for (Broker broker : brokers) {
+            if (!broker.isLeader()) {
+                String brokenUrl = broker.getConnectionUrl();
+                // send topics to subscribers to broker
+                restTemplate.postForObject(brokenUrl + "/broker/replicatetopicstosubscribers", topicsToSubscribers, String.class);
+            }
+        }
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Topic to Subscriber replicate successfully.");
+    }
+
     public ResponseEntity<String> updateTopics(ConcurrentSkipListSet<String> topics) {
             this.topics.clear();
             this.topics.addAll(topics);
         // Return HTTP 200 OK status with a success message
         return ResponseEntity.ok("Topic replicate successfully.");
+    }
+
+    public ResponseEntity<String> updateSubscribers(CopyOnWriteArrayList<Subscriber> subscribers) {
+            this.subscribers.clear();
+            this.subscribers.addAll(subscribers);
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Subscriber replicate successfully.");
+    }
+
+    public ResponseEntity<String> updateTopicsToSubscribers(ConcurrentHashMap<String, List<Subscriber>> topicsToSubscribers) {
+            this.topicsSubscriber.clear();
+            this.topicsSubscriber.putAll(topicsToSubscribers);
+        // Return HTTP 200 OK status with a success message
+        return ResponseEntity.ok("Topic to Subscriber replicate successfully.");
+    }
+
+    public boolean isSubscriberValid(Integer subscriberId) {
+        for (Subscriber subscriber : subscribers) {
+            if (subscriber.getId().equals(subscriberId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void startMessageProcessingThread() {
@@ -174,4 +247,5 @@ public class BrokerService {
         messageProcessingThread.setDaemon(true);
         messageProcessingThread.start();
     }
+
 }
