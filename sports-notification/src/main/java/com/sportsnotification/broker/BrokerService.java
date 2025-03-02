@@ -1,18 +1,19 @@
 package com.sportsnotification.broker;
 
-import com.sportsnotification.dto.*;
-import lombok.Getter;
+import com.sportsnotification.dto.Broker;
+import com.sportsnotification.dto.Packet;
+import com.sportsnotification.dto.Publisher;
+import com.sportsnotification.dto.Subscriber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-
-import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,9 +24,7 @@ public class BrokerService {
     private final CopyOnWriteArrayList<Subscriber> subscribers = new CopyOnWriteArrayList<>();
     private final CopyOnWriteArrayList<Publisher> publishers = new CopyOnWriteArrayList<>();
     private final ConcurrentSkipListSet<String> topics = new ConcurrentSkipListSet<>();
-    @Getter
     private final ConcurrentHashMap<String, List<Subscriber>> topicsSubscriber = new ConcurrentHashMap<>(); // Broadcast thread
-    @Getter
     private final ConcurrentLinkedQueue<Packet> messages = new ConcurrentLinkedQueue<>();
 
     @Autowired
@@ -49,14 +48,17 @@ public class BrokerService {
     }
 
     public ResponseEntity<String>  registerSubscriber(Subscriber subscriber) {
-        if (subscriber.getConnectionUrl() == null) {
-            throw new IllegalArgumentException("Connection URL cannot be null");
+        if(!isSubscriberAlreadyExist(subscriber.getConnectionUrl())) {
+            if (subscriber.getConnectionUrl() == null) {
+                throw new IllegalArgumentException("Connection URL cannot be null");
+            }
+            subscribers.add(subscriber);
+            System.out.println("Registered Subscriber Id : " + subscriber.getId());
+            replicateSubscribersToAllBrokers(subscribers);
+            // Return HTTP 200 OK status with a success message
+            return ResponseEntity.ok("Subscriber registered successfully.");
         }
-        subscribers.add(subscriber);
-        System.out.println("Registered Subscriber Id : " + subscriber.getId());
-        replicateSubscribersToAllBrokers(subscribers);
-        // Return HTTP 200 OK status with a success message
-        return ResponseEntity.ok("Subscriber registered successfully.");
+        return ResponseEntity.ok("Subscriber Already Registered.");
     }
 
     public ResponseEntity<String>  publishMessage(Packet message) {
@@ -84,7 +86,7 @@ public class BrokerService {
     }
 
     public ResponseEntity<String> subscribeToTopic(Subscriber subscriber) {
-        if(isSubscriberValid(subscriber.getId())) {
+        if(isSubscriberValid(subscriber.getConnectionUrl())) {
             if (subscriber.getTopic() == null) {
                 throw new IllegalArgumentException("Topic cannot be null");
             }
@@ -109,7 +111,7 @@ public class BrokerService {
     }
 
     public ResponseEntity<String> unsubscribeToTopic(Subscriber subscriber) {
-        if(isSubscriberValid(subscriber.getId())) {
+        if(isSubscriberValid(subscriber.getConnectionUrl())) {
             if (subscriber.getTopic() == null) {
                 throw new IllegalArgumentException("Topic cannot be null");
             }
@@ -228,9 +230,9 @@ public class BrokerService {
         return ResponseEntity.ok("Topic to Subscriber replicate successfully.");
     }
 
-    public boolean isSubscriberValid(Integer subscriberId) {
+    public boolean isSubscriberValid(String subscriberConnectionURL) {
         for (Subscriber subscriber : subscribers) {
-            if (subscriber.getId().equals(subscriberId)) {
+            if (subscriber.getConnectionUrl().equals(subscriberConnectionURL)) {
                 return true;
             }
         }
@@ -248,4 +250,20 @@ public class BrokerService {
         messageProcessingThread.start();
     }
 
+    private boolean isSubscriberAlreadyExist(String subscriberConnectionURL) {
+        for (Subscriber subscriber : subscribers) {
+            if (subscriber.getConnectionUrl().equals(subscriberConnectionURL)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public ConcurrentHashMap<String, List<Subscriber>> getTopicsSubscriber() {
+        return this.topicsSubscriber;
+    }
+
+    public ConcurrentLinkedQueue<Packet> getMessages() {
+        return this.messages;
+    }
 }

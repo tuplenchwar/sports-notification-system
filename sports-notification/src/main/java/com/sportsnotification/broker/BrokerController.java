@@ -1,6 +1,9 @@
 package com.sportsnotification.broker;
 
-import com.sportsnotification.dto.*;
+import com.sportsnotification.dto.Broker;
+import com.sportsnotification.dto.Packet;
+import com.sportsnotification.dto.Publisher;
+import com.sportsnotification.dto.Subscriber;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -22,8 +25,8 @@ public class BrokerController {
     private BrokerService brokerService;
 
     @GetMapping("/gettopics")
-    public ResponseEntity<ConcurrentSkipListSet<String>> getAllTopics(@RequestParam Integer subscriberId) {
-        if (!brokerService.isSubscriberValid(subscriberId)) {
+    public ResponseEntity<ConcurrentSkipListSet<String>> getAllTopics(@RequestParam String subscriberConnectionURL) {
+        if (!brokerService.isSubscriberValid(subscriberConnectionURL)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 if subscriber is not valid
         }
         return ResponseEntity.ok(brokerService.getAllTopics());

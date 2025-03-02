@@ -1,7 +1,5 @@
 package com.sportsnotification.dto;
 
-import java.util.Objects;
-
 public class Subscriber {
     private Integer id;
     private String topic;

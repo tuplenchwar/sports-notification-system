@@ -1,8 +1,6 @@
 package com.sportsnotification.dto;
 
 
-import java.sql.Time;
-
 public class Heartbeat {
     private String id;
     private Broker brokers;

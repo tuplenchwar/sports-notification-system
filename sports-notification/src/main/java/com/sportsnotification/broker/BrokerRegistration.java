@@ -1,21 +1,20 @@
 package com.sportsnotification.broker;
 
-import com.sportsnotification.dto.*;
-import lombok.Getter;
+import com.sportsnotification.dto.Broker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 import javax.annotation.PostConstruct;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Profile("broker")
 @Component
@@ -27,11 +26,13 @@ public class BrokerRegistration {
     @Value("${coordinator.url:http://127.0.0.1:8080}")
     private String coordinatorUrl;
 
-    @Getter
     private Broker currentBroker;
 
-    @Value("${server.port}")
+    @Value("${server.port:8090}")
     private Integer brokerPort;
+
+    @Value("${broker.url:http://127.0.0.1:8080}")
+    private String brokerUrl;
 
     @Autowired
     private BrokerService brokerService;
@@ -45,7 +46,7 @@ public class BrokerRegistration {
         currentBroker = new Broker();
         currentBroker.setId(brokerId);
         currentBroker.setPort(brokerPort);
-        currentBroker.setConnectionUrl("http://127.0.0.1:" + brokerPort);
+        currentBroker.setConnectionUrl( getPublicIPAddress() + brokerPort);
 
         ResponseEntity<Broker[]> response = restTemplate.postForEntity(coordinatorUrl + "/coordinator/register", currentBroker, Broker[].class);
         Broker[] brokers = response.getBody();
@@ -71,5 +72,27 @@ public class BrokerRegistration {
         messageProcessingThread.setDaemon(true);
         messageProcessingThread.start();
     }
+
+    public Broker getCurrentBroker() {
+        return this.currentBroker;
+    }
+
+
+    public static String getPublicIPAddress() {
+            try {
+                URL url = new URL("http://169.254.169.254/latest/meta-data/public-ipv4");
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String publicIP = reader.readLine();
+                reader.close();
+
+                return publicIP;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return "127.0.0.1"; // Fallback to localhost if retrieval fails
+            }
+        }
 }
 

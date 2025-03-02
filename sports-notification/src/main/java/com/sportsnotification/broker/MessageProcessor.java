@@ -3,7 +3,9 @@ package com.sportsnotification.broker;
 import com.sportsnotification.dto.Packet;
 import com.sportsnotification.dto.Subscriber;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,7 +35,12 @@ public class MessageProcessor implements Runnable {
                     if (subscribers != null) {
                         for (Subscriber subscriber : subscribers) {
                             System.out.println("Sending message to subscriber: " + subscriber.getConnectionUrl());
-                            restTemplate.postForObject(subscriber.getConnectionUrl() + "/subscriber/receive", message, String.class);
+                            ResponseEntity<String> response = restTemplate.postForEntity(subscriber.getConnectionUrl() + "/subscriber/receive", message, String.class);
+                            if(response.getStatusCode().is2xxSuccessful()) {
+                                System.out.println("Message sent successfully");
+                            } else {
+                                System.out.println("Failed to send message");
+                            }
                         }
                     }
                     messages.poll();
