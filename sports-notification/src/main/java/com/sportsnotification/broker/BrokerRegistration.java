@@ -31,11 +31,14 @@ public class BrokerRegistration {
     @Value("${server.port:8090}")
     private Integer brokerPort;
 
-    @Value("${broker.url:http://127.0.0.1:8080}")
+    @Value("${broker.url:http://127.0.0.1}")
     private String brokerUrl;
 
     @Autowired
     private BrokerService brokerService;
+
+    @Value("${isLocal:false}")
+    private boolean isLocal;
 
     private Thread messageProcessingThread;
 
@@ -46,7 +49,11 @@ public class BrokerRegistration {
         currentBroker = new Broker();
         currentBroker.setId(brokerId);
         currentBroker.setPort(brokerPort);
-        currentBroker.setConnectionUrl( getPublicIPAddress() + brokerPort);
+        if(isLocal){
+            currentBroker.setConnectionUrl( brokerUrl + ":" + brokerPort);
+        }else {
+            currentBroker.setConnectionUrl( "http://" + getPublicIPAddress() + ":" + brokerPort);
+        }
 
         ResponseEntity<Broker[]> response = restTemplate.postForEntity(coordinatorUrl + "/coordinator/register", currentBroker, Broker[].class);
         Broker[] brokers = response.getBody();

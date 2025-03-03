@@ -17,5 +17,5 @@ EXPOSE 8090
 CMD ["sh", "-c", "BROKER_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4) && \
   java -jar /app/sports-notification.jar \
   --spring.profiles.active=broker \
-  --coordinator.url=http://192.168.1.100:8085 \
+  --coordinator.url=http://coordinator-sports-notification.click:8080 \
   --broker.url=http://$BROKER_IP:8090"]

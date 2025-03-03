@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -116,7 +117,15 @@ public class BrokerService {
                 throw new IllegalArgumentException("Topic cannot be null");
             }
             if (topicsSubscriber.containsKey(subscriber.getTopic())) {
-                topicsSubscriber.get(subscriber.getTopic()).remove(subscriber);
+                List<Subscriber> subscribers = topicsSubscriber.get(subscriber.getTopic());
+                for (Subscriber sub : subscribers) {
+                    if (Objects.equals(sub.getConnectionUrl(), subscriber.getConnectionUrl())) {
+                        subscribers.remove(sub);
+                        break;
+                    }
+                }
+                System.out.println("Subscriber Id removed: " + subscriber.getConnectionUrl());
+                topicsSubscriber.put(subscriber.getTopic(), subscribers);
             }
         }
         else {

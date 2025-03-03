@@ -3,6 +3,7 @@ package com.sportsnotification.coordinator;
 import com.sportsnotification.dto.Broker;
 import com.sportsnotification.dto.CoordinatorSyncData;
 import com.sportsnotification.dto.Heartbeat;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -38,12 +39,21 @@ public class CoordinatorService {
     //DS for coordinator
     private boolean isPrimary = false;
 
+    //Run locally
+    @Value("${isLocal:false}")
+    private boolean isLocal;
+
+
     @PostConstruct
     public void init() {
-        determinePrimary(); // Assigns role (primary/secondary)
-        startHeartbeatMonitor(); // Keeps track of broker health
-        if (isPrimary) {
-            waitForSecondaryAndSync(); // Sync with secondary only if primary
+        if(isLocal) {
+            startHeartbeatMonitor(); // Keeps track of broker health
+        }else{
+            determinePrimary(); // Assigns role (primary/secondary)
+            startHeartbeatMonitor(); // Keeps track of broker health
+            if (isPrimary) {
+                waitForSecondaryAndSync(); // Sync with secondary only if primary
+            }
         }
     }
 

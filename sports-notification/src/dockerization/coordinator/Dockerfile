@@ -6,8 +6,8 @@ WORKDIR /app
 
 # Set environment variables
 ENV AWS_REGION=us-west-2
-ENV AWS_ACCESS_KEY_ID=XXXXXXXXXX
-ENV AWS_SECRET_ACCESS_KEY=XXXXXX
+ENV AWS_ACCESS_KEY_ID=XXXXXX
+ENV AWS_SECRET_ACCESS_KEY=XXXX
 
 # Update package list and install curl
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
