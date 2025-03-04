@@ -52,7 +52,7 @@ public class BrokerRegistration {
         if(isLocal){
             currentBroker.setConnectionUrl( brokerUrl + ":" + brokerPort);
         }else {
-            currentBroker.setConnectionUrl( "http://" + getPublicIPAddress() + ":" + brokerPort);
+            currentBroker.setConnectionUrl( brokerUrl + ":" + brokerPort);
         }
 
         ResponseEntity<Broker[]> response = restTemplate.postForEntity(coordinatorUrl + "/coordinator/register", currentBroker, Broker[].class);
@@ -84,22 +84,5 @@ public class BrokerRegistration {
         return this.currentBroker;
     }
 
-
-    public static String getPublicIPAddress() {
-            try {
-                URL url = new URL("http://169.254.169.254/latest/meta-data/public-ipv4");
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                String publicIP = reader.readLine();
-                reader.close();
-
-                return publicIP;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return "127.0.0.1"; // Fallback to localhost if retrieval fails
-            }
-        }
 }
 

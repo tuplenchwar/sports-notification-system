@@ -1,6 +1,7 @@
 package com.sportsnotification.coordinator;
 
 import com.sportsnotification.dto.Broker;
+import com.sportsnotification.dto.CoordinatorHeartbeat;
 import com.sportsnotification.dto.CoordinatorSyncData;
 import com.sportsnotification.dto.Heartbeat;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,15 @@ public class CoordinatorController {
         return coordinatorService.register(broker);
     }
 
+    @PostMapping("/register-coordinator")
+    public void registerCoordinator(@RequestParam String secondaryCoordinatorURL){
+        coordinatorService.registerCoordinator(secondaryCoordinatorURL);
+    }
+
+    @PostMapping("/coordinator-heartbeat")
+    public void coordinatorHeartbeat(@RequestBody CoordinatorHeartbeat coordinatorHeartbeat) {
+        coordinatorService.coordinatorHeartbeat(coordinatorHeartbeat);
+    }
 
     @PostMapping("/heartbeat")
     public void heartbeat(@RequestBody Heartbeat heartbeat) {
