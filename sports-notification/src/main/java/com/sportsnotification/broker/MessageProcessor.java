@@ -2,6 +2,8 @@ package com.sportsnotification.broker;
 
 import com.sportsnotification.dto.Packet;
 import com.sportsnotification.dto.Subscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -11,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MessageProcessor implements Runnable {
+
+    private static final Logger logger = LoggerFactory.getLogger(MessageProcessor.class);
 
     @Autowired
     private final BrokerService brokerService;
@@ -30,25 +34,27 @@ public class MessageProcessor implements Runnable {
 
                 if (!messages.isEmpty()) {
                     Packet message = messages.peek();
-                    System.out.println("Processing message: " + message.getMessage());
+                    logger.info("Processing message: {}", message.getMessage());
                     List<Subscriber> subscribers = topicsSubscriber.get(message.getTopic());
+
                     if (subscribers != null) {
                         for (Subscriber subscriber : subscribers) {
-                            System.out.println("Sending message to subscriber: " + subscriber.getConnectionUrl());
+                            logger.info("Sending message to subscriber: {}", subscriber.getConnectionUrl());
                             ResponseEntity<String> response = restTemplate.postForEntity(subscriber.getConnectionUrl() + "/subscriber/receive", message, String.class);
-                            if(response.getStatusCode().is2xxSuccessful()) {
-                                System.out.println("Message sent successfully");
+
+                            if (response.getStatusCode().is2xxSuccessful()) {
+                                logger.info("Message sent successfully to: {}", subscriber.getConnectionUrl());
                             } else {
-                                System.out.println("Failed to send message");
+                                logger.warn("Failed to send message to: {} with status code: {}", subscriber.getConnectionUrl(), response.getStatusCode());
                             }
                         }
                     }
                     messages.poll();
                     brokerService.replicateMessageToAllBrokers(messages);
                 }
-                Thread.sleep(1000); // Adjust delay as needed
+                Thread.sleep(1000);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error processing messages: {}", e.getMessage(), e);
             }
         }
     }

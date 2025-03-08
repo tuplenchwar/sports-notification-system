@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,75 +23,152 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequestMapping("/broker")
 public class BrokerController {
 
+    private static final Logger logger = LoggerFactory.getLogger(BrokerController.class);
+
     @Autowired
     private BrokerService brokerService;
 
     @GetMapping("/gettopics")
     public ResponseEntity<ConcurrentSkipListSet<String>> getAllTopics(@RequestParam String subscriberConnectionURL) {
-        if (!brokerService.isSubscriberValid(subscriberConnectionURL)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 if subscriber is not valid
+        try {
+            logger.info("Fetching all topics for subscriber: {}", subscriberConnectionURL);
+            if (!brokerService.isSubscriberValid(subscriberConnectionURL)) {
+                logger.warn("Invalid subscriber access attempt: {}", subscriberConnectionURL);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            return ResponseEntity.ok(brokerService.getAllTopics());
+        } catch (Exception e) {
+            logger.error("Error fetching topics for subscriber {}: {}", subscriberConnectionURL, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        return ResponseEntity.ok(brokerService.getAllTopics());
     }
 
     @PostMapping("/register-publisher")
     public void registerPublisher(@RequestBody Publisher publisher) {
-        brokerService.registerPublisher(publisher);
+        try {
+            logger.info("Registering publisher: {}", publisher);
+            brokerService.registerPublisher(publisher);
+        } catch (Exception e) {
+            logger.error("Error registering publisher {}: {}", publisher, e.getMessage(), e);
+        }
     }
 
     @PostMapping("/register-subscriber")
-    public ResponseEntity<String>  registerSubscriber(@RequestBody Subscriber subscriber) {
-        return brokerService.registerSubscriber(subscriber);
+    public ResponseEntity<String> registerSubscriber(@RequestBody Subscriber subscriber) {
+        try {
+            logger.info("Registering subscriber: {}", subscriber);
+            return brokerService.registerSubscriber(subscriber);
+        } catch (Exception e) {
+            logger.error("Error registering subscriber {}: {}", subscriber, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error registering subscriber");
+        }
     }
 
     @PostMapping("/publish")
     public ResponseEntity<String> publishMessage(@RequestBody Packet message) {
-        return brokerService.publishMessage(message);
+        try {
+            logger.info("Publishing message: {}", message);
+            return brokerService.publishMessage(message);
+        } catch (Exception e) {
+            logger.error("Error publishing message {}: {}", message, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error publishing message");
+        }
     }
 
     @PostMapping("/replicatemessages")
     public ResponseEntity<String> updateMessages(@RequestBody ConcurrentLinkedQueue<Packet> messageQueue) {
-        return brokerService.updateMessages(messageQueue);
+        try {
+            logger.info("Replicating messages: {}", messageQueue);
+            return brokerService.updateMessages(messageQueue);
+        } catch (Exception e) {
+            logger.error("Error replicating messages: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error replicating messages");
+        }
     }
 
     @PostMapping("/replicatetopics")
     public ResponseEntity<String> updateTopics(@RequestBody ConcurrentSkipListSet<String> topics) {
-        return brokerService.updateTopics(topics);
+        try {
+            logger.info("Replicating topics: {}", topics);
+            return brokerService.updateTopics(topics);
+        } catch (Exception e) {
+            logger.error("Error replicating topics: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error replicating topics");
+        }
     }
 
     @PostMapping("/replicatesubscribers")
     public ResponseEntity<String> updateSubscribers(@RequestBody CopyOnWriteArrayList<Subscriber> subscribers) {
-        return brokerService.updateSubscribers(subscribers);
+        try {
+            logger.info("Replicating subscribers: {}", subscribers);
+            return brokerService.updateSubscribers(subscribers);
+        } catch (Exception e) {
+            logger.error("Error replicating subscribers: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error replicating subscribers");
+        }
     }
 
     @PostMapping("/replicatetopicstosubscribers")
     public ResponseEntity<String> updateTopicsToSubscribers(@RequestBody ConcurrentHashMap<String, List<Subscriber>> topicsToSubscribers) {
-        return brokerService.updateTopicsToSubscribers(topicsToSubscribers);
+        try {
+            logger.info("Replicating topics to subscribers: {}", topicsToSubscribers);
+            return brokerService.updateTopicsToSubscribers(topicsToSubscribers);
+        } catch (Exception e) {
+            logger.error("Error replicating topics to subscribers: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error replicating topics to subscribers");
+        }
     }
 
     @PutMapping("/subscribe")
     public ResponseEntity<String> subscribeToTopic(@RequestBody Subscriber subscriber) {
-        return brokerService.subscribeToTopic(subscriber);
+        try {
+            logger.info("Subscribing to topic: {}", subscriber);
+            return brokerService.subscribeToTopic(subscriber);
+        } catch (Exception e) {
+            logger.error("Error subscribing to topic: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error subscribing to topic");
+        }
     }
 
     @PutMapping("/unsubscribe")
     public ResponseEntity<String> unsubscribeToTopic(@RequestBody Subscriber subscriber) {
-        return brokerService.unsubscribeToTopic(subscriber);
+        try {
+            logger.info("Unsubscribing from topic: {}", subscriber);
+            return brokerService.unsubscribeToTopic(subscriber);
+        } catch (Exception e) {
+            logger.error("Error unsubscribing from topic: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error unsubscribing from topic");
+        }
     }
 
     @PutMapping("/update-leader")
-    public void updateLeader(@RequestBody Broker newleader) {
-        brokerService.updateLeader(newleader);
+    public void updateLeader(@RequestBody Broker newLeader) {
+        try {
+            logger.info("Updating leader: {}", newLeader);
+            brokerService.updateLeader(newLeader);
+        } catch (Exception e) {
+            logger.error("Error updating leader: {}", e.getMessage(), e);
+        }
     }
 
     @PutMapping("/update-brokers")
-    public void  updateBrokerList(@RequestBody List<Broker> brokers) {
-        brokerService.updateBrokers(brokers);
+    public void updateBrokerList(@RequestBody List<Broker> brokers) {
+        try {
+            logger.info("Updating broker list: {}", brokers);
+            brokerService.updateBrokers(brokers);
+        } catch (Exception e) {
+            logger.error("Error updating broker list: {}", e.getMessage(), e);
+        }
     }
 
-    @GetMapping("/brokers-list")//testing
+    @GetMapping("/brokers-list")
     public List<Broker> getBrokersList() {
-        return brokerService.getBrokersList();
+        try {
+            logger.info("Fetching brokers list");
+            return brokerService.getBrokersList();
+        } catch (Exception e) {
+            logger.error("Error fetching brokers list: {}", e.getMessage(), e);
+            return List.of();
+        }
     }
-    
 }
