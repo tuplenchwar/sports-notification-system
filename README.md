@@ -11,86 +11,262 @@ This runbook provides step-by-step instructions to set up and run the Distribute
 ## YAML Configuration for AWS Setup
 
 ```yaml
-AWSTemplateFormatVersion: '2010-09-09'
-Description: Distributed Pub-Sub System Setup
-
-Parameters:
-  KeyPairName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: Name of an existing EC2 KeyPair for SSH access
-  InstanceType:
-    Type: String
-    Default: t2.micro
+AWSTemplateFormatVersion: '2025-11-03'
+Description: 'Template for sports-buzz AWS resources configuration'
 
 Resources:
-  CoordinatorInstance1:
-    Type: AWS::EC2::Instance
+  HostedZone:
+    Type: 'AWS::Route53::HostedZone'
     Properties:
-      InstanceType: t2.micro
-      KeyName: !Ref KeyPairName
-      ImageId: ami-0abcdef1234567890 # replace with actual AMI ID
-      SecurityGroupIds:
-        - sg-1234567890abcdefg # replace with actual Security Group ID
-      Tags:
-        - Key: Name
-          Value: Coordinator1
+      Name: coordinator-sports-notification.click
+      
+  PrimaryARecord:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      HostedZoneId: !Ref HostedZone
+      Name: coordinator-sports-notification.click.
+      Type: A
+      TTL: 30
+      ResourceRecords:
+        - 44.246.139.142
+      SetIdentifier: Primary_coordinator
+      Failover: PRIMARY
+      HealthCheckId: f04a1e04-d944-4074-b509-dbe0f22de72f
 
-  Coordinator2:
-    Type: AWS::EC2::Instance
+  SecondaryARecord:
+    Type: 'AWS::Route53::RecordSet'
     Properties:
-      KeyName: !Ref KeyPairName
-      ImageId: ami-0abcdef1234567890 # replace with actual AMI ID
-      SecurityGroupIds:
-        - sg-1234567890abcdefg # replace with actual Security Group ID
-      Tags:
-        - Key: Name
-          Value: Coordinator2
+      HostedZoneId: !Ref HostedZone
+      Name: coordinator-sports-notification.click.
+      Type: A
+      TTL: 300
+      ResourceRecords:
+        - 52.41.4.136
+      SetIdentifier: Secondary_coordinator
+      Failover: SECONDARY
+      HealthCheckId: bff13903-e343-4985-b448-f0f7b59db981
 
-  Brokers:
-    Type: AWS::EC2::Instance
+  NSRecord:
+    Type: 'AWS::Route53::RecordSet'
     Properties:
-      ImageId: ami-0abcdef1234567890 # replace with actual AMI ID
-      InstanceType: t2.micro
-      KeyName: !Ref KeyPairName
-      SecurityGroupIds:
-        - sg-1234567890abcdefg # replace with actual Security Group ID
-      MinCount: 3
-      MaxCount: 3
-      Tags:
-        - Key: Name
-          Value: Broker
+      HostedZoneId: !Ref HostedZone
+      Name: coordinator-sports-notification.click.
+      Type: NS
+      TTL: 172800
+      ResourceRecords:
+        - ns-262.awsdns-32.com.
+        - ns-1222.awsdns-24.org.
+        - ns-937.awsdns-53.net.
+        - ns-1868.awsdns-41.co.uk.
 
-  Publisher:
-    Type: AWS::EC2::Instance
+  SOARecord:
+    Type: 'AWS::Route53::RecordSet'
     Properties:
-      InstanceType: t2.micro
-      ImageId: ami-0abcdef1234567890 # replace with actual AMI ID
-      KeyName: !Ref KeyPairName
-      SecurityGroupIds:
-        - sg-1234567890abcdefg # replace with actual Security Group ID
-      Tags:
-        - Key: Name
-          Value: Publisher
+      HostedZoneId: !Ref HostedZone
+      Name: coordinator-sports-notification.click.
+      Type: SOA
+      TTL: 900
+      ResourceRecords:
+        - ns-262.awsdns-32.com. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400
 
-  Subscriber:
-    Type: AWS::EC2::Instance
+  PrimaryCoordinatorInstance:
+    Type: 'AWS::EC2::Instance'
     Properties:
+      ImageId: ami-027951e78de46a00e
       InstanceType: t2.micro
-      ImageId: ami-0abcdef1234567890 # replace with actual AMI ID
-      KeyName: !Ref KeyPairName
-      SecurityGroupIds:
-        - sg-1234567890abcdefg # replace with actual Security Group ID
+      KeyName: coordinator-key-pair
+      SecurityGroups: 
+        - launch-wizard-1
+      SubnetId: subnet-00e76b9560d843c6b
       Tags:
         - Key: Name
-          Value: Subscriber
+          Value: Primary-Coordinator
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+      DisableApiTermination: false
+      EbsOptimized: false
+      Monitoring: false
+      SourceDestCheck: true
+
+  SecondaryCoordinatorInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-027951e78de46a00e
+      InstanceType: t2.micro
+      KeyName: coordinator-key-pair
+      SecurityGroups:
+        - launch-wizard-1
+      SubnetId: subnet-00e76b9560d843c6b
+      Tags:
+        - Key: Name
+          Value: Secondary-Coordinator
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+      DisableApiTermination: false
+      EbsOptimized: false
+      Monitoring: false
+      SourceDestCheck: true
+
+  Broker1Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-027951e78de46a00e
+      InstanceType: t2.micro
+      KeyName: coordinator-key-pair
+      SecurityGroups:
+        - launch-wizard-1
+      SubnetId: subnet-00e76b9560d843c6b
+      Tags:
+        - Key: Name
+          Value: Broker_1
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+      DisableApiTermination: false
+      EbsOptimized: false
+      Monitoring: false
+      SourceDestCheck: true
+
+  Broker2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-027951e78de46a00e
+      InstanceType: t2.micro
+      KeyName: coordinator-key-pair
+      SecurityGroups:
+        - launch-wizard-1
+      SubnetId: subnet-00e76b9560d843c6b
+      Tags:
+        - Key: Name
+          Value: Broker_2
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+      DisableApiTermination: false
+      EbsOptimized: false
+      Monitoring: false
+      SourceDestCheck: true
+
+  Broker3Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-027951e78de46a00e
+      InstanceType: t2.micro
+      KeyName: coordinator-key-pair
+      SecurityGroups:
+        - launch-wizard-1
+      SubnetId: subnet-00e76b9560d843c6b
+      Tags:
+        - Key: Name
+          Value: Broker_3
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            DeleteOnTermination: true
+      DisableApiTermination: false
+      EbsOptimized: false
+      Monitoring: false
+      SourceDestCheck: true
+
+  Subscriber1Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-027951e78de46a00e
+      InstanceType: t2.micro
+      KeyName: coordinator-key-pair
+      SecurityGro
+
+  LaunchWizard1SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: launch-wizard-1
+      GroupDescription: launch-wizard-1 created 2025-03-02T05:07:03.724Z
+      VpcId: vpc-08bda50ef26f6056e
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8091
+          ToPort: 8091
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1  # -1 means all protocols
+          FromPort: -1    # -1 means all ports
+          ToPort: -1      # -1 means all ports
+          CidrIp: 0.0.0.0/0
+
+  # Optional: Add tags if needed
+  Tags:
+    - Key: Name
+      Value: launch-wizard-1
+
+  PrimaryCoordinatorHealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        IPAddress: 44.246.139.142
+        Port: 8080
+        Type: HTTP
+        ResourcePath: '/coordinator/brokers'
+        RequestInterval: 30
+        FailureThreshold: 1
+        EnableSNI: false
+        MeasureLatency: false
+        Inverted: false
+        Disabled: false
+        Regions:
+          - us-east-1
+          - us-west-1
+          - us-west-2
+      HealthCheckTags:
+        - Key: Name
+          Value: PrimaryCoordinatorHealthCheck
+
+  SecondaryCoordinatorHealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        IPAddress: 52.41.4.136
+        Port: 8080
+        Type: HTTP
+        ResourcePath: '/coordinator/brokers'
+        RequestInterval: 30
+        FailureThreshold: 1
+        EnableSNI: false
+        MeasureLatency: false
+        Inverted: false
+        Disabled: false
+        Regions:
+          - us-east-1
+          - us-west-1
+          - us-west-2
+      HealthCheckTags:
+        - Key: Name
+          Value: SecondaryCoordinatorHealthCheck
 
 Outputs:
-  Coordinator1IP:
-    Description: IP Address of the Primary Coordinator
-    Value: !GetAtt Coordinator1.PublicIp
-  Coordinator2IP:
-    Description: IP Address of the Secondary Coordinator
-    Value: !GetAtt Coordinator2.PublicIp
+  PrimaryHealthCheckId:
+    Description: 'Health Check ID for Primary Coordinator'
+    Value: !Ref PrimaryCoordinatorHealthCheck
+  SecondaryHealthCheckId:
+    Description: 'Health Check ID for Secondary Coordinator'
+    Value: !Ref SecondaryCoordinatorHealthCheck
 ```
 
 ## Post Deployment Steps
