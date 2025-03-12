@@ -321,7 +321,7 @@ Ensure Route53 health checks pass by:
 ```bash
 curl --location 'http://<Coordinator-IP>:8080/coordinator/brokers'
 ```
-do the same for secondary coordinator as well. 
+Do the same for secondary coordinator as well. 
 
 ## Final Checks
 - Confirm all EC2 instances are up.
