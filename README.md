@@ -1,6 +1,6 @@
-# AWS Setup Runbook for Distributed Pub-Sub System
+# AWS Setup Runbook for Distributed Sports Notification Pub-Sub System
 
-This runbook provides step-by-step instructions to set up and run the Distributed Pub-Sub system project on AWS.
+This runbook provides step-by-step instructions to set up and run the Distributed Sports Notification Pub-Sub system project on AWS.
 
 ## Prerequisites:
 - Domain purchased and hosted zone set up on AWS Route53.
@@ -269,14 +269,20 @@ Outputs:
     Value: !Ref SecondaryCoordinatorHealthCheck
 ```
 
-## Post Deployment Steps
+## Post Deployment Steps and EC2 Instance Setup Commands
 - SSH into each EC2 instance.
-- Install Docker and deploy your container images as per the original runbook.
-- Configure Route53 Hosted Zone and health checks for Coordinator instances as described earlier.
+```bash
+ssh -i ~/Downloads/coordinator-key-pair.pem ec2-user@<EC2-Public-DNS>
+```
 
-### EC2 Instance Setup Commands
-
-Connect to each EC2 instance and run:
+- Export AWS keys on EC2 machines and allowed access AWS APIs
+```bash
+export AWS_REGION=us-west-2
+export AWS_ACCESS_KEY_ID=<Your Access Key>
+export AWS_SECRET_ACCESS_KEY=<Your Secret Access Key>
+aws ec2 modify-instance-metadata-options --instance-id <INSTANCE_ID> --http-tokens optional --http-endpoint enabled
+```
+- Install Docker 
 ```bash
 sudo yum update -y
 sudo yum install -y docker
@@ -284,20 +290,20 @@ sudo systemctl start docker
 sudo systemctl enable docker
 sudo usermod -aG docker ec2-user
 newgrp docker
+```
 
-export AWS_REGION=us-west-2
-export AWS_ACCESS_KEY_ID=<Your Access Key>
-export AWS_SECRET_ACCESS_KEY=<Your Secret Access Key>
+- If you are build images locally then use below command to scp
+```bash
 
-aws ec2 modify-instance-metadata-options --instance-id <INSTANCE_ID> --http-tokens optional --http-endpoint enabled
-
+```
+- Load and run container images
+```bash
 scp -i ~/Downloads/coordinator-key-pair.pem <docker-image-file>.tar ec2-user@<EC2-IP>:/home/ec2-user/
-
-ssh -i ~/Downloads/coordinator-key-pair.pem ec2-user@<EC2-Public-DNS>
-
 docker load -i <docker-image-file>.tar
 docker run -d -p 8080:8080 <docker-image-name>
 ```
+- Configure Route53 Hosted Zone and health checks for Coordinator instances as describe below.
+
 
 ## Route53 Health Check Configuration
 
@@ -328,5 +334,5 @@ Do the same for secondary coordinator as well.
 - Validate Docker containers with `docker ps`.
 - Ensure Route53 health checks are successful.
 
-Your Distributed Pub-Sub System is now ready for use.
+Your Distributed sport-notification pub-sub System is now ready for use.
 
