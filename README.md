@@ -294,11 +294,11 @@ newgrp docker
 
 - If you are build images locally then use below command to scp
 ```bash
+scp -i ~/Downloads/coordinator-key-pair.pem <docker-image-file>.tar ec2-user@<EC2-IP>:/home/ec2-user/
 
 ```
 - Load and run container images
 ```bash
-scp -i ~/Downloads/coordinator-key-pair.pem <docker-image-file>.tar ec2-user@<EC2-IP>:/home/ec2-user/
 docker load -i <docker-image-file>.tar
 docker run -d -p 8080:8080 <docker-image-name>
 ```
