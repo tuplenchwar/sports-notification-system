@@ -292,7 +292,7 @@ sudo usermod -aG docker ec2-user
 newgrp docker
 ```
 
-- If you are build images locally then use below command to scp
+- Use below command to scp(copy) tar files to respective EC2 instances
 ```bash
 scp -i ~/Downloads/coordinator-key-pair.pem <docker-image-file>.tar ec2-user@<EC2-IP>:/home/ec2-user/
 
@@ -301,8 +301,9 @@ scp -i ~/Downloads/coordinator-key-pair.pem <docker-image-file>.tar ec2-user@<EC
 ```bash
 docker load -i <docker-image-file>.tar
 docker run -d -p 8080:8080 <docker-image-name>
+docker logs -f <container_id_or_name>
 ```
-- Configure Route53 Hosted Zone and health checks for Coordinator instances as describe below.
+- Configure Route53 Hosted Zone and health checks for Coordinator instances (Mentioned in yaml file).
 
 
 ## Route53 Health Check Configuration
@@ -315,13 +316,13 @@ docker run -d -p 8080:8080 <docker-image-name>
 
    - Protocol: HTTP
 
-   - IP address: 52.41.4.136
+   - IP address: _Primary Coordinator IP address_
 
-   - Host name: www.example.com
+   - Host name: _domain_name_
 
    - Port: 8080
 
-   - Path: /coordinator/brokers
+   - Path: _/coordinator/brokers_
 
 Ensure Route53 health checks pass by:
 ```bash
