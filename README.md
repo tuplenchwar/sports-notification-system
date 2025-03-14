@@ -338,7 +338,7 @@ Do the same for secondary coordinator as well.
 Your Distributed sport-notification pub-sub System is now ready for use.
 
 
-Division of work:
+## Division of work:
 
 | Task                                  | Owner          |
 |----------------------------------------|---------------|
