@@ -337,3 +337,18 @@ Do the same for secondary coordinator as well.
 
 Your Distributed sport-notification pub-sub System is now ready for use.
 
+
+Division of work:
+
+| Task                                  | Owner          |
+|----------------------------------------|---------------|
+| Publisher (Backend + Frontend)        | Inderpreet    |
+| Coordinator + Route53 setup + Broker + Protocols | Tanvi         |
+| Subscriber (Backend + Frontend)       | Gauri         |
+| Testing                               | Team          |
+| Deployment on AWS                     | Team          |
+| Presentation                          | Team          |
+| Report                                | Team          |
+
+ 
+
